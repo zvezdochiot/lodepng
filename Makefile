@@ -9,26 +9,63 @@
 CC ?= gcc
 CXX ?= g++
 
-override CFLAGS := -W -Wall -Wextra -ansi -pedantic -O3 -Wno-unused-function $(CFLAGS)
-override CXXFLAGS := -W -Wall -Wextra -ansi -pedantic -O3 $(CXXFLAGS)
+CBASEFLAGS = -W -Wall -Wextra -ansi -pedantic -O3
 
-all: unittest benchmark pngdetail showpng
+ifneq ($(shell uname -m), i386)
+    CBASEFLAGS += -fPIC
+endif
+
+override CFLAGS := $(CBASEFLAGS) -Wno-unused-function $(CFLAGS)
+override CXXFLAGS := $(CBASEFLAGS) $(CXXFLAGS)
+
+BIN       = unittest benchmark pngdetail pngshow pnglossy
+STATICLIB = $(PREFIX)liblodepng.a
+SHAREDLIB = $(PREFIX)liblodepng.so.0
+SHAREDBIN = pngdetail-shared pngreencode-shared pnglossy-shared pngshow-shared
+LIBOBJS   = src/lodepng.o src/lodepng_util.o
+LIBSDL    = -lSDL2
+RM        = rm -f
+
+all:  $(STATICLIB) $(BIN)
 
 %.o: %.cpp
-	@mkdir -p `dirname $@`
-	$(CXX) -I ./ $(CXXFLAGS) -c $< -o $@
+	$(CXX) -Isrc $(CXXFLAGS) -c $< -o $@
 
-unittest: lodepng.o lodepng_util.o lodepng_unittest.o
-	$(CXX) $^ $(CXXFLAGS) -o $@
+unittest: src/lodepng_unittest.o $(STATICLIB)
+	$(CXX) $(CXXFLAGS) $^ -o $@
 
-benchmark: lodepng.o lodepng_benchmark.o
-	$(CXX) $^ $(CXXFLAGS) -lSDL2 -o $@
+benchmark: src/lodepng_benchmark.o $(STATICLIB)
+	$(CXX) $(CXXFLAGS) $^ $(LIBSDL) -o $@
 
-pngdetail: lodepng.o lodepng_util.o pngdetail.o
-	$(CXX) $^ $(CXXFLAGS) -o $@
+pngdetail: src/pngdetail.o $(STATICLIB)
+	$(CXX) $(CXXFLAGS) $^ -o $@
 
-showpng: lodepng.o examples/example_sdl.o
-	$(CXX) -I ./ $^ $(CXXFLAGS) -lSDL2 -o $@
+pngshow:  src/examples/example_sdl.o $(STATICLIB)
+	$(CXX) $(CXXFLAGS) $^ $(LIBSDL) -o $@
+
+pnglossy: src/examples/example_lossy.o $(STATICLIB)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+shared: $(STATICLIB) $(SHAREDLIB) $(SHAREDBIN)
+
+$(STATICLIB): $(LIBOBJS)
+	$(AR) rcs $@ $^
+	$(if $(RANLIB), $(RANLIB) $@)
+
+$(SHAREDLIB): $(LIBOBJS)
+	$(CXX) -shared -Wl,-soname,$@ $(CXXFLAGS) $^ $(LDFLAGS) -o $@
+
+pngdetail-shared: src/pngdetail.o $(SHAREDLIB)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+pngreencode-shared: src/examples/example_reencode.o $(SHAREDLIB)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+pnglossy-shared: src/examples/example_lossy.o $(SHAREDLIB)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+pngshow-shared: src/examples/example_sdl.o $(SHAREDLIB)
+	$(CXX) $(CXXFLAGS) $^ $(LIBSDL) -o $@
 
 clean:
-	rm -f unittest benchmark pngdetail showpng lodepng_unittest.o lodepng_benchmark.o lodepng.o lodepng_util.o pngdetail.o examples/example_sdl.o
+	$(RM) $(BIN) $(STATICLIB) $(SHAREDLIB) $(SHAREDBIN) src/*.o src/examples/*.o
