@@ -1,3 +1,10 @@
+`ORG.IPEP:`
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/ImageProcessing-ElectronicPublications/lodepng)
+![GitHub Release Date](https://img.shields.io/github/release-date/ImageProcessing-ElectronicPublications/lodepng)
+![GitHub repo size](https://img.shields.io/github/repo-size/ImageProcessing-ElectronicPublications/lodepng)
+![GitHub all releases](https://img.shields.io/github/downloads/ImageProcessing-ElectronicPublications/lodepng/total)
+![GitHub](https://img.shields.io/github/license/ImageProcessing-ElectronicPublications/lodepng)  
+
 LodePNG
 -------
 
